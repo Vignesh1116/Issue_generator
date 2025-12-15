@@ -33,14 +33,21 @@ async def create_issue(issue_request: IssueRequest):
     if not issue_request.issueText:
         raise HTTPException(status_code=400, detail="Issue text required")
 
-    owner = os.getenv("GITHUB_OWNER")
-    repo = os.getenv("GITHUB_REPO")
+    owner = os.getenv("GITHUB_OWNER", "Vignesh1116")
+    repo = os.getenv("GITHUB_REPO", "Issue_generator")
+    
+    # Fallback: Try GITHUB_URL if GITHUB_TOKEN is missing (user has token in GITHUB_URL in .env)
     token = os.getenv("GITHUB_TOKEN")
+    if not token and os.getenv("GITHUB_URL"):
+        token = os.getenv("GITHUB_URL")
 
     if not all([owner, repo, token]):
-        # Fallback to checking if the token is stored as GITHUB_URL (based on your current .env)
-        # But ideally, you should update .env to match the expected keys
-        raise HTTPException(status_code=500, detail="GitHub configuration missing in .env")
+        missing = []
+        if not owner: missing.append("GITHUB_OWNER")
+        if not repo: missing.append("GITHUB_REPO")
+        if not token: missing.append("GITHUB_TOKEN (or GITHUB_URL)")
+        print(f"Error: Missing environment variables: {', '.join(missing)}")
+        raise HTTPException(status_code=500, detail=f"GitHub configuration missing: {', '.join(missing)}")
 
     url = f"https://api.github.com/repos/{owner}/{repo}/issues"
     
@@ -61,14 +68,17 @@ async def create_issue(issue_request: IssueRequest):
             data = response.json()
             return {"success": True, "issueUrl": data.get("html_url")}
         except httpx.HTTPStatusError as e:
+            error_detail = e.response.json() if e.response.content else str(e)
+            print(f"GitHub API Error: {error_detail}")
             return JSONResponse(
                 status_code=500,
                 content={
                     "error": "Failed to create issue",
-                    "details": e.response.json() if e.response.content else str(e)
+                    "details": error_detail
                 }
             )
         except Exception as e:
+            print(f"Internal Server Error: {str(e)}")
             return JSONResponse(
                 status_code=500,
                 content={"error": "Failed to create issue", "details": str(e)}
