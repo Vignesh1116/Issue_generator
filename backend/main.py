@@ -38,14 +38,12 @@ async def create_issue(issue_request: IssueRequest):
     
     # Fallback: Try GITHUB_URL if GITHUB_TOKEN is missing (user has token in GITHUB_URL in .env)
     token = os.getenv("GITHUB_TOKEN")
-    if not token and os.getenv("GITHUB_URL"):
-        token = os.getenv("GITHUB_URL")
 
     if not all([owner, repo, token]):
         missing = []
         if not owner: missing.append("GITHUB_OWNER")
         if not repo: missing.append("GITHUB_REPO")
-        if not token: missing.append("GITHUB_TOKEN (or GITHUB_URL)")
+        if not token: missing.append("GITHUB_TOKEN")
         print(f"Error: Missing environment variables: {', '.join(missing)}")
         raise HTTPException(status_code=500, detail=f"GitHub configuration missing: {', '.join(missing)}")
 
