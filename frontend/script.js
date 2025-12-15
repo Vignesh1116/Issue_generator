@@ -13,7 +13,8 @@ document.getElementById("submitIssue").addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("https://issue-generator.onrender.com/create-issue", {
+  // Use relative path so it works on both localhost and Render automatically
+  const res = await fetch("/create-issue", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
